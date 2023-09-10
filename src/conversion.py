@@ -42,7 +42,7 @@ def convert_file(leaf: FilesystemLeaf, source_folder: str, dest_folder: str, des
         subprocess.run(['cp', source_file, dest_folder], check=True, capture_output=True)
     else :
         print('CONVERT' if dest_dt is None else 'UPDATE', dest_file)
-        command = ['ffmpeg', '-i', source_file, '-q:a', '2', dest_file]
+        command = ['ffmpeg', '-y', '-i', source_file, '-q:a', '2', dest_file]
         subprocess.run(command, check=True, capture_output=True)
 
 
