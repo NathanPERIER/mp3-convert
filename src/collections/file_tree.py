@@ -9,7 +9,7 @@ class FilesystemLeaf :
 
     def __init__(self, filename: str, extension: str, modification: datetime) :
         self.filename: Final[str] = filename
-        self.extensions: map[str, datetime] = { extension: modification }
+        self.extensions: dict[str, datetime] = { extension: modification }
     
     def add_extension(self, extension: str, modification: datetime) :
         self.extensions[extension] = modification
@@ -19,8 +19,8 @@ class FilesystemNode :
 
     def __init__(self, name: str) :
         self.name = name
-        self.subfolders: map[str, FilesystemNode] = {}
-        self.files: map[str, FilesystemLeaf] = {}
+        self.subfolders: dict[str, FilesystemNode] = {}
+        self.files: dict[str, FilesystemLeaf] = {}
         self.file_count = 0
 
     def _add_subfolder(self, name: str) -> "FilesystemNode" :
@@ -45,3 +45,9 @@ class FilesystemNode :
             node = node._add_subfolder(folder)
         node._add_file(filename, extension, modification)
 
+    def push_subfolder(self, name: str) -> "FilesystemNode" :
+        if name in self.subfolders :
+            raise Exception('Tried to push a folder that already existed')
+        res = FilesystemNode(name)
+        self.subfolders[name] = res
+        return res

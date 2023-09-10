@@ -2,7 +2,7 @@
 
 import sys
 
-from src.utils.directory_analyser import scan_directory
+from src.conversion import conversion
 
 
 def help() :
@@ -34,11 +34,7 @@ def main() :
     if dest_dir.endswith('/') :
         dest_dir = dest_dir[:-1]
 
-    source_files = scan_directory(source_dir, ['mp3', 'flac', 'm4a'])
-    print('Found', source_files.file_count, 'input files')
-
-    dest_files = scan_directory(dest_dir, ['mp3'])
-    print('Found', dest_files.file_count, 'files in the destination directory')
+    conversion(source_dir, dest_dir, can_remove)
 
 
 if __name__== '__main__' :
