@@ -3,6 +3,7 @@ import os
 import sys
 import itertools
 from datetime import datetime
+from tqdm import tqdm
 
 from typing import Final, Optional, Tuple, Iterable
 
@@ -182,6 +183,11 @@ def conversion(source_dir: str, dest_dir: str, can_remove: bool) :
 
     if len(patches) == 0 :
         print("Nothing to do")
+        return
+
+    if os.isatty(sys.stdout.fileno()) :
+        for p in tqdm(patches, desc='Progress', unit='patch') :
+            p.apply()
         return
     
     for p in patches :
