@@ -6,7 +6,7 @@ from src.conversion import conversion
 
 
 def help() :
-    print(f"{sys.argv[0]} [--no-remove] <source> <destination>")
+    print(f"{sys.argv[0]} [--dry-run] [--no-remove] <source> <destination>")
 
 
 def main() :
@@ -16,6 +16,11 @@ def main() :
     if i < len(sys.argv) and sys.argv[i] in ['-h', '--help'] :
         help()
         sys.exit(0)
+
+    dry_run = False
+    if i < len(sys.argv) and sys.argv[i] == '--dry-run' :
+        dry_run = True
+        i += 1
     
     can_remove = True
     if i < len(sys.argv) and sys.argv[i] == '--no-remove' :
@@ -34,7 +39,7 @@ def main() :
     if dest_dir.endswith('/') :
         dest_dir = dest_dir[:-1]
 
-    conversion(source_dir, dest_dir, can_remove)
+    conversion(source_dir, dest_dir, can_remove, dry_run)
 
 
 if __name__== '__main__' :

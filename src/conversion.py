@@ -172,7 +172,7 @@ def process(src_node: FilesystemNode, dst_node: FilesystemNode, options: Options
 
 
 
-def conversion(source_dir: str, dest_dir: str, can_remove: bool) :
+def conversion(source_dir: str, dest_dir: str, can_remove: bool, dry_run: bool) :
     source_files = scan_directory(source_dir, INPUT_EXTENSIONS)
     print('Found', source_files.file_count, 'input files')
 
@@ -183,6 +183,11 @@ def conversion(source_dir: str, dest_dir: str, can_remove: bool) :
 
     if len(patches) == 0 :
         print("Nothing to do")
+        return
+
+    if dry_run :
+        for p in patches :
+            print(p.describe())
         return
 
     if os.isatty(sys.stdout.fileno()) :

@@ -3,7 +3,7 @@
 This is a script I made to convert my music library to MP3. 
 
 ```
-usage: ./convert.py [--no-remove] <source> <destination>
+usage: ./convert.py [--no-remove] [--dry-run] <source> <destination>
 ```
 
 The idea is that we have a bunch of audio files organised in a directory, for example like this :
