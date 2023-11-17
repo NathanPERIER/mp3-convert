@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from typing import Final
+from typing import Final, Sequence
 
 
 class FilesystemLeaf :
@@ -22,6 +22,16 @@ class FilesystemNode :
         self.subfolders: dict[str, FilesystemNode] = {}
         self.files: dict[str, FilesystemLeaf] = {}
         self.file_count = 0
+    
+    def list_files(self) -> "Sequence[FilesystemLeaf]" :
+        res = list(self.files.values())
+        res.sort(key = lambda n: n.filename)
+        return res
+    
+    def list_folders(self) -> "Sequence[FilesystemNode]" :
+        res = list(self.subfolders.values())
+        res.sort(key = lambda n: n.name)
+        return res
 
     def _add_subfolder(self, name: str) -> "FilesystemNode" :
         self.file_count += 1

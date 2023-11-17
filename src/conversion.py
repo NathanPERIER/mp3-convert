@@ -68,10 +68,8 @@ def recursive_remove(node: FilesystemNode, path: str) :
 # - Destination exists, source doesn't => if can_remove, rm
 
 def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, options: Options, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) :
-    src_file_entries = list(src_node.files.values())
-    dst_file_entries = list(dst_node.files.values())
-    src_file_entries.sort(key = lambda n: n.filename)
-    dst_file_entries.sort(key = lambda n: n.filename)
+    src_file_entries = src_node.list_files()
+    dst_file_entries = dst_node.list_files()
     i_src = 0
     i_dst = 0
 
@@ -109,10 +107,8 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, options: 
 # - Destination exists, source doesn't => if can_remove, rm recursively (only files)
 
 def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, options: Options, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) :
-    src_folder_entries = list(src_node.subfolders.values())
-    dst_folder_entries = list(dst_node.subfolders.values())
-    src_folder_entries.sort(key = lambda n: n.name)
-    dst_folder_entries.sort(key = lambda n: n.name)
+    src_folder_entries = src_node.list_folders()
+    dst_folder_entries = dst_node.list_folders()
     i_src = 0
     i_dst = 0
 
