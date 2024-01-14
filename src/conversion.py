@@ -5,12 +5,11 @@ import itertools
 from datetime import datetime
 from tqdm import tqdm
 
-from typing import Final, Optional, Tuple, Iterable
+from typing import Optional, Tuple, Iterable
 
 from src.options import options as prog_options
 from src.collections.file_tree import FilesystemNode, FilesystemLeaf
 from src.utils.directory_analyser import scan_directory
-from src.utils.errors import UnreachableCode
 from src.patches import Patch, ConvertPatch, CopyPatch, CreateDirPatch, RemovePatch
 
 
@@ -19,15 +18,15 @@ OUTPUT_EXTENSION = 'mp3'
 
 
 def remove_file(leaf: FilesystemLeaf, path: str) -> Patch :
-    return RemovePatch(os.path.join(path, f"{leaf.filename}.{leaf.extension}"))
+    return RemovePatch(os.path.join(path, leaf.filename()))
 
 def convert_file(leaf: FilesystemLeaf, source_folder: str, dest_folder: str, dest_dt: Optional[datetime] = None) -> Iterable[Patch] :
-    source_file = os.path.join(source_folder, f"{leaf.filename}.{leaf.extension}")
+    source_file = os.path.join(source_folder, leaf.filename())
     if dest_dt != None and dest_dt >= leaf.modification :
         return []
-    if source_file.endswith(f".{OUTPUT_EXTENSION}") :
+    if leaf.extension == OUTPUT_EXTENSION :
         return [ CopyPatch(source_file, dest_folder, dest_dt is not None) ]
-    dest_file = os.path.join(dest_folder, f"{leaf.filename}.{OUTPUT_EXTENSION}")
+    dest_file = os.path.join(dest_folder, f"{leaf.name}.{OUTPUT_EXTENSION}")
     return [ ConvertPatch(source_file, dest_file, dest_dt is not None) ]
 
 
@@ -65,11 +64,11 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_
     while i_src < len(src_file_entries) and i_dst < len(dst_file_entries) :
         src_entry = src_file_entries[i_src]
         dst_entry = dst_file_entries[i_dst]
-        if src_entry.filename == dst_entry.filename :
+        if src_entry.name == dst_entry.name :
             res.extend(convert_file(src_entry, src_base_path, dst_base_path, dst_entry.modification))
             i_src += 1
             i_dst += 1
-        elif src_entry.filename < dst_entry.filename : # input file doesn't exist in the destination tree
+        elif src_entry.name < dst_entry.name : # input file doesn't exist in the destination tree
             res.extend(convert_file(src_entry, src_base_path, dst_base_path))
             i_src += 1
         else :                                         # output file doesn't exist in the source tree

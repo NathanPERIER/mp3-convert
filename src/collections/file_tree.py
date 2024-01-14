@@ -1,5 +1,4 @@
 
-
 from datetime import datetime
 
 from typing import Final, Optional, Sequence
@@ -7,10 +6,13 @@ from typing import Final, Optional, Sequence
 
 class FilesystemLeaf :
 
-    def __init__(self, filename: str, extension: str, modification: datetime) :
-        self.filename: Final[str] = filename
+    def __init__(self, name: str, extension: str, modification: datetime) :
+        self.name: Final[str] = name
         self.extension: Final[str] = extension
         self.modification: Final[datetime] = modification
+
+    def filename(self) -> str :
+        return f"{self.name}.{self.extension}"
 
 
 class FilesystemNode :
@@ -23,7 +25,7 @@ class FilesystemNode :
     
     def list_files(self) -> "Sequence[FilesystemLeaf]" :
         res = list(self.files.values())
-        res.sort(key = lambda n: n.filename)
+        res.sort(key = lambda n: n.name)
         return res
     
     def list_folders(self) -> "Sequence[FilesystemNode]" :
