@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from typing import Final, Optional, Tuple, Iterable
 
+from src.options import options as prog_options
 from src.collections.file_tree import FilesystemNode, FilesystemLeaf
 from src.utils.directory_analyser import scan_directory
 from src.utils.errors import UnreachableCode
@@ -15,12 +16,6 @@ from src.patches import Patch, ConvertPatch, CopyPatch, CreateDirPatch, RemovePa
 
 INPUT_EXTENSIONS = ['flac', 'm4a', 'mp3']
 OUTPUT_EXTENSION = 'mp3'
-
-
-class Options :
-
-    def __init__(self, can_remove: bool) :
-        self.can_remove: Final[bool] = can_remove
 
 
 def remove_file(leaf: FilesystemLeaf, path: str) -> Patch :
@@ -59,7 +54,7 @@ def recursive_remove(node: FilesystemNode, path: str) -> Iterable[Patch] :
 # - Source exists, destination exists  => cp/ffmpeg if source strictly older than destination
 # - Destination exists, source doesn't => if can_remove, rm
 
-def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, options: Options, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> list[Patch] :
+def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> list[Patch] :
     res: list[Patch] = []
     
     src_file_entries = src_node.list_files()
@@ -78,7 +73,7 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, options: 
             res.extend(convert_file(src_entry, src_base_path, dst_base_path))
             i_src += 1
         else :                                         # output file doesn't exist in the source tree
-            if options.can_remove :
+            if prog_options.can_remove :
                 res.append(remove_file(dst_entry, dst_base_path))
             i_dst += 1
     
@@ -88,7 +83,7 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, options: 
         i_src += 1
     
     # remaining files that exist only in the destination tree
-    if options.can_remove :
+    if prog_options.can_remove :
         while i_dst < len(dst_file_entries) :
             res.append(remove_file(dst_file_entries[i_dst], dst_base_path))
             i_dst += 1
@@ -102,7 +97,7 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, options: 
 # - Source exists, destination exists  => keep going
 # - Destination exists, source doesn't => if can_remove, rm recursively (only files)
 
-def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, options: Options, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> list[Patch] :
+def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> list[Patch] :
     res: list[Patch] = []
 
     src_folder_entries = src_node.list_folders()
@@ -115,7 +110,7 @@ def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, options: O
         dst_entry = dst_folder_entries[i_dst]
         mkdir_patch = None
         if src_entry.name > dst_entry.name : # output folder doesn't exist in the source tree
-            if options.can_remove :
+            if prog_options.can_remove :
                 res.extend(recursive_remove(dst_entry, dst_base_path))
             i_dst += 1
             continue
@@ -124,7 +119,7 @@ def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, options: O
         else :
             i_dst += 1
         i_src += 1
-        patches = process(src_entry, dst_entry, options, src_base_path, dst_base_path)
+        patches = process(src_entry, dst_entry, src_base_path, dst_base_path)
         if len(patches) > 0 :
             if mkdir_patch is not None :
                 res.append(mkdir_patch)
@@ -134,7 +129,7 @@ def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, options: O
     while i_src < len(src_folder_entries) :
         src_node = src_folder_entries[i_src]
         dst_node, mkdir_patch = add_directory(src_node.name, dst_node, dst_base_path)
-        patches = process(src_node, dst_node, options, src_base_path, dst_base_path)
+        patches = process(src_node, dst_node, src_base_path, dst_base_path)
         if len(patches) > 0 :
             if mkdir_patch is not None :
                 res.append(mkdir_patch)
@@ -142,7 +137,7 @@ def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, options: O
         i_src += 1
     
     # remaining folders that exist only in the destination tree
-    if options.can_remove :
+    if prog_options.can_remove :
         while i_dst < len(dst_folder_entries) :
             res.extend(recursive_remove(dst_folder_entries[i_dst], dst_base_path))
             i_dst += 1
@@ -151,32 +146,32 @@ def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, options: O
 
 
 
-def process(src_node: FilesystemNode, dst_node: FilesystemNode, options: Options, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> list[Patch] :
+def process(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> list[Patch] :
     src_subfolder_path = src_node.name if src_base_path is None else os.path.join(src_base_path, src_node.name)
     dst_subfolder_path = dst_node.name if dst_base_path is None else os.path.join(dst_base_path, dst_node.name)
     return list(itertools.chain(
         # Files
-        process_leaves(src_node, dst_node, options, src_subfolder_path, dst_subfolder_path),
+        process_leaves(src_node, dst_node, src_subfolder_path, dst_subfolder_path),
         # Subfolders
-        process_nodes(src_node, dst_node, options, src_subfolder_path, dst_subfolder_path)
+        process_nodes(src_node, dst_node, src_subfolder_path, dst_subfolder_path)
     ))
 
 
 
-def conversion(source_dir: str, dest_dir: str, can_remove: bool, dry_run: bool) :
+def conversion(source_dir: str, dest_dir: str) :
     source_files = scan_directory(source_dir, INPUT_EXTENSIONS)
     print('Found', source_files.file_count, 'input files')
 
     dest_files = scan_directory(dest_dir, [OUTPUT_EXTENSION])
     print('Found', dest_files.file_count, 'files in the destination directory')
 
-    patches = process(source_files, dest_files, options = Options(can_remove))
+    patches = process(source_files, dest_files)
 
     if len(patches) == 0 :
         print("Nothing to do")
         return
 
-    if dry_run :
+    if prog_options.dry_run :
         for p in patches :
             print(p.describe())
         return

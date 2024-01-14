@@ -1,45 +1,45 @@
 #!/usr/bin/python3
 
 import sys
+from collections import deque
 
+from src.options import options as prog_options
 from src.conversion import conversion
 
 
 def help() :
-    print(f"{sys.argv[0]} [--dry-run] [--no-remove] <source> <destination>")
+    print(f"{sys.argv[0]} [--dry-run] [--no-remove] [--keep-threshold <keep>] [--default-keep <keep>] <source> <destination>")
 
 
 def main() :
 
-    i = 1
+    args = deque(sys.argv[1:])
 
-    if i < len(sys.argv) and sys.argv[i] in ['-h', '--help'] :
+    if len(args) > 0 and args[0] in ['-h', '--help'] :
         help()
         sys.exit(0)
 
-    dry_run = False
-    if i < len(sys.argv) and sys.argv[i] == '--dry-run' :
-        dry_run = True
-        i += 1
+    if len(args) > 0 and args[0] == '--dry-run' :
+        prog_options.dry_run = True
+        args.popleft()
     
-    can_remove = True
-    if i < len(sys.argv) and sys.argv[i] == '--no-remove' :
-        can_remove = False
-        i += 1
+    if len(args) > 0 and args[0] == '--no-remove' :
+        prog_options.can_remove = False
+        args.popleft()
     
-    if i + 1 >= len(sys.argv) :
+    if len(args) != 2 :
         help()
         sys.exit(1)
 
-    source_dir = sys.argv[i]
-    dest_dir = sys.argv[i+1]
+    source_dir = args.popleft()
+    dest_dir = args.popleft()
 
     if source_dir.endswith('/') :
         source_dir = source_dir[:-1]
     if dest_dir.endswith('/') :
         dest_dir = dest_dir[:-1]
 
-    conversion(source_dir, dest_dir, can_remove, dry_run)
+    conversion(source_dir, dest_dir)
 
 
 if __name__== '__main__' :
