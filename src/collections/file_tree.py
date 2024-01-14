@@ -9,7 +9,7 @@ from typing import Final, Optional, Sequence
 class LeafMetadata :
 
     def __init__(self, keep: ConvertKeep) :
-        keep: Final[ConvertKeep] = keep
+        self.keep: Final[ConvertKeep] = keep
 
 
 class FilesystemLeaf :
@@ -41,6 +41,13 @@ class FilesystemNode :
         res = list(self.subfolders.values())
         res.sort(key = lambda n: n.name)
         return res
+
+    def drop_file(self, name: str) -> bool :
+        if name not in self.files :
+            return False
+        del self.files[name]
+        self.file_count -= 1
+        return True
 
     def _add_subfolder(self, name: str) -> "FilesystemNode" :
         self.file_count += 1

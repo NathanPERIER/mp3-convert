@@ -10,5 +10,5 @@ class ConvertKeep(Enum) :
     def lowest() -> "ConvertKeep" :
         return ConvertKeep.SKIP
 
-    def __gt__(self, other: "ConvertKeep") -> bool :
-        return self.value > other.value
+    def __le__(self, other: "ConvertKeep") -> bool :
+        return self.value <= other.value

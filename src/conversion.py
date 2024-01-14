@@ -8,8 +8,10 @@ from tqdm import tqdm
 from typing import Optional, Tuple, Iterable
 
 from src.options import options as prog_options
+from src.metadata.keep import ConvertKeep
 from src.collections.file_tree import FilesystemNode, FilesystemLeaf
 from src.utils.directory_analyser import scan_directory
+from src.metadata.parsing import read_metadata
 from src.patches import Patch, ConvertPatch, CopyPatch, CreateDirPatch, RemovePatch
 
 
@@ -55,6 +57,14 @@ def recursive_remove(node: FilesystemNode, path: str) -> Iterable[Patch] :
 
 def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> list[Patch] :
     res: list[Patch] = []
+
+    if prog_options.keep_treshold != ConvertKeep.lowest() :
+        for leaf in src_node.list_files() :
+            read_metadata(src_base_path, leaf, prog_options.default_keep)
+            if leaf.metadata is None or leaf.metadata.keep <= prog_options.keep_treshold :
+                continue
+            print(f"IGNORE ({leaf.metadata.keep.name.lower()}) {os.path.join(src_base_path, leaf.filename())}")
+            src_node.drop_file(leaf.name)
     
     src_file_entries = src_node.list_files()
     dst_file_entries = dst_node.list_files()
@@ -164,6 +174,7 @@ def conversion(source_dir: str, dest_dir: str) :
     dest_files = scan_directory(dest_dir, [OUTPUT_EXTENSION])
     print('Found', dest_files.file_count, 'files in the destination directory')
 
+    print('Processing trees and metadata')
     patches = process(source_files, dest_files)
 
     if len(patches) == 0 :
@@ -171,9 +182,12 @@ def conversion(source_dir: str, dest_dir: str) :
         return
 
     if prog_options.dry_run :
+        print(' --- Patch summary --- ')
         for p in patches :
             print(p.describe())
         return
+    
+    print('Applying patches')
 
     if os.isatty(sys.stdout.fileno()) :
         for p in tqdm(patches, desc='Progress', unit='patch') :
