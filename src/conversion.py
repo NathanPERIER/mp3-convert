@@ -23,21 +23,12 @@ class Options :
         self.can_remove: Final[bool] = can_remove
 
 
-def select_input_file(leaf: FilesystemLeaf, path: str) -> Tuple[str, datetime] :
-    for ext in INPUT_EXTENSIONS :
-        if ext in leaf.extensions :
-            return (os.path.join(path, f"{leaf.filename}.{ext}"), leaf.extensions[ext])
-    raise UnreachableCode()
-
-def remove_file(leaf: FilesystemLeaf, path: str) -> Iterable[Patch] :
-    return (
-        RemovePatch(os.path.join(path, f"{leaf.filename}.{ext}"))
-        for ext in leaf.extensions
-    )
+def remove_file(leaf: FilesystemLeaf, path: str) -> Patch :
+    return RemovePatch(os.path.join(path, f"{leaf.filename}.{leaf.extension}"))
 
 def convert_file(leaf: FilesystemLeaf, source_folder: str, dest_folder: str, dest_dt: Optional[datetime] = None) -> Iterable[Patch] :
-    source_file, source_dt = select_input_file(leaf, source_folder)
-    if dest_dt != None and dest_dt >= source_dt :
+    source_file = os.path.join(source_folder, f"{leaf.filename}.{leaf.extension}")
+    if dest_dt != None and dest_dt >= leaf.modification :
         return []
     if source_file.endswith(f".{OUTPUT_EXTENSION}") :
         return [ CopyPatch(source_file, dest_folder, dest_dt is not None) ]
@@ -57,7 +48,7 @@ def add_directory(name: str, node: FilesystemNode, path: str) -> Tuple[Filesyste
 def recursive_remove(node: FilesystemNode, path: str) -> Iterable[Patch] :
     subfolder_path = os.path.join(path, node.name)
     return itertools.chain(
-        itertools.chain.from_iterable(remove_file(file, subfolder_path) for file in node.files.values()),
+        (remove_file(file, subfolder_path) for file in node.files.values()),
         itertools.chain.from_iterable(recursive_remove(node, subfolder_path) for node in node.subfolders.values()),
     )
 
@@ -80,7 +71,7 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, options: 
         src_entry = src_file_entries[i_src]
         dst_entry = dst_file_entries[i_dst]
         if src_entry.filename == dst_entry.filename :
-            res.extend(convert_file(src_entry, src_base_path, dst_base_path, dst_entry.extensions[OUTPUT_EXTENSION]))
+            res.extend(convert_file(src_entry, src_base_path, dst_base_path, dst_entry.modification))
             i_src += 1
             i_dst += 1
         elif src_entry.filename < dst_entry.filename : # input file doesn't exist in the destination tree
@@ -88,7 +79,7 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, options: 
             i_src += 1
         else :                                         # output file doesn't exist in the source tree
             if options.can_remove :
-                res.extend(remove_file(dst_entry, dst_base_path))
+                res.append(remove_file(dst_entry, dst_base_path))
             i_dst += 1
     
     # remaining files that exist only in the source tree
@@ -99,7 +90,7 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, options: 
     # remaining files that exist only in the destination tree
     if options.can_remove :
         while i_dst < len(dst_file_entries) :
-            res.extend(remove_file(dst_file_entries[i_dst], dst_base_path))
+            res.append(remove_file(dst_file_entries[i_dst], dst_base_path))
             i_dst += 1
     
     return res

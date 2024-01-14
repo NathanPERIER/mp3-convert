@@ -27,6 +27,11 @@ def scan_directory(directory: str, extensions: Sequence[str]) :
     command = ['find', directory, '-type', 'f', '-a', '(', *__make_extension_filter(extensions), ')', '-printf', '%TF %TT %Tz %p\\n']
     r = subprocess.run(command, check=True, capture_output=True)
 
+    extensions_weight = {
+        ext: len(extensions) - i
+        for i, ext in enumerate(extensions)
+    }
+
     res = FilesystemNode(directory)
 
     prefix_len = len(directory) + 1
@@ -43,8 +48,12 @@ def scan_directory(directory: str, extensions: Sequence[str]) :
         directory = m.group(3)[prefix_len:]
         filename = m.group(4)
         extension = m.group(5)
+        logger.debug("(%s) %s/%s.%s", date_repr, directory, filename, extension)
+        registered_file = res.get_file(directory, filename)
+        if registered_file is not None :
+            if extensions_weight[extension] < extensions_weight[registered_file.extension] :
+                continue
         dt = datetime.strptime(date_repr, '%Y-%m-%d %H:%M:%S %z')
         res.push_file(directory, filename, extension, dt)
-        logger.debug("(%s) %s/%s.%s", date_repr, directory, filename, extension)
 
     return res

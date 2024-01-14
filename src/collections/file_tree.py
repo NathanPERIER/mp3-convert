@@ -2,17 +2,15 @@
 
 from datetime import datetime
 
-from typing import Final, Sequence
+from typing import Final, Optional, Sequence
 
 
 class FilesystemLeaf :
 
     def __init__(self, filename: str, extension: str, modification: datetime) :
         self.filename: Final[str] = filename
-        self.extensions: dict[str, datetime] = { extension: modification }
-    
-    def add_extension(self, extension: str, modification: datetime) :
-        self.extensions[extension] = modification
+        self.extension: Final[str] = extension
+        self.modification: Final[datetime] = modification
 
 
 class FilesystemNode :
@@ -42,10 +40,8 @@ class FilesystemNode :
         return self.subfolders[name]
     
     def _add_file(self, filename: str, extension: str, modification: datetime) :
-        self.file_count += 1
-        if filename in self.files :
-            self.files[filename].add_extension(extension, modification)
-            return
+        if filename not in self.files :
+            self.file_count += 1
         self.files[filename] = FilesystemLeaf(filename, extension, modification)
 
     def push_file(self, path: str, filename: str, extension: str, modification: datetime) :
@@ -61,3 +57,14 @@ class FilesystemNode :
         res = FilesystemNode(name)
         self.subfolders[name] = res
         return res
+    
+    def get_file(self, path: str, filename: str) -> "Optional[FilesystemLeaf]" :
+        folders = path.split('/')
+        node = self
+        for folder in folders :
+            if folder not in node.subfolders :
+                return None
+            node = node.subfolders[folder]
+        if filename in node.files :
+            return node.files[filename]
+        return None
