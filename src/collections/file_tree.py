@@ -1,7 +1,15 @@
 
 from datetime import datetime
 
+from src.metadata.keep import ConvertKeep
+
 from typing import Final, Optional, Sequence
+
+
+class LeafMetadata :
+
+    def __init__(self, keep: ConvertKeep) :
+        keep: Final[ConvertKeep] = keep
 
 
 class FilesystemLeaf :
@@ -10,6 +18,7 @@ class FilesystemLeaf :
         self.name: Final[str] = name
         self.extension: Final[str] = extension
         self.modification: Final[datetime] = modification
+        self.metadata: Optional[LeafMetadata] = None
 
     def filename(self) -> str :
         return f"{self.name}.{self.extension}"
