@@ -57,8 +57,8 @@ def metadata_mpeg4(path: str, leaf: FilesystemLeaf) :
     with open(filepath, 'rb') as f :
         tags = MP4(f).tags
     
-    if tags is not None and 'CONVERT-KEEP' in tags :
-        res.keep = tags['CONVERT-KEEP'][0].strip()
+    if tags is not None and '----:com.apple.iTunes:Convert-Keep' in tags :
+        res.keep = tags['----:com.apple.iTunes:Convert-Keep'][0].strip()
     
     return res
 
