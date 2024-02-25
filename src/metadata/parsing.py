@@ -83,7 +83,7 @@ def read_metadata(path: str, leaf: FilesystemLeaf, default_keep: ConvertKeep) :
     elif leaf.extension == 'flac' :
         raw = metadata_flac(path, leaf)
     elif leaf.extension == 'm4a' :
-		rax = metadata_mpeg4(path, leaf)
+        raw = metadata_mpeg4(path, leaf)
     else :
         print(f"Unsupported extension for metadata parsing : {leaf.extension}")
     
