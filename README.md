@@ -3,7 +3,7 @@
 This is a script I made to convert my music library to MP3. 
 
 ```
-usage: ./convert.py [--no-remove] [--dry-run] <source> <destination>
+usage: ./convert.py [--dry-run] [--no-remove] [--keep-threshold <keep>] [--default-keep <keep>] <source> <destination>
 ```
 
 The idea is that we have a bunch of audio files organised in a directory, for example like this :
@@ -57,3 +57,20 @@ For the conversion, the script uses `ffmpeg`, which must be installed on the sys
 Edge cases that are currently not taken into account : 
  - node is a folder in the source tree but a file in the destination tree (or the other way around)
  - filesystem naming errors in the destination folder (e.g. source FS is EXT4, destination FS is NTFS)
+
+## Thresholds
+
+Music hoarders can be faced with a dilemma : on one hand, we would like to keep **all** the tracks from the original album, but on the other hand we would also like to actually use the music library in our daily lives. The problem is that sometimes albums include tracks that we are not interested in listening to, such as instrumentals, short versions, remixes, ... We don't really have an interest in keeping a copy of those and they can be quite annoying when we just want to play a random music from the library. The threshold concept is an attempt to reconcile both these worlds.
+
+The idea is that we are going to add a custom `Convert-Keep` tag to the audio files in the origin directory. The possible values are :
+
+- `always`: kept all the time
+- `bonus`: good to have
+- `skip`: do not keep
+
+We can then pass the desired level via the `--keep-threshold` command-line option. Any file whose level is strictly under the desired level will be considered as inexisting by the script. This is to say that it will not be converted/copied and it will be removed from the destination directory (if it is allowed). For files that do not have the tag, the default value is `always` but it can be changed via the `--default-keep` command-line option.
+
+> Warning: The code used for parsing MP3/M4A/FLAC tags was only tested with metadata written via [kid3](https://kid3.kde.org/), there might still be edge cases that are not taken into account.
+
+The main downside with this method is that it requires modifying the source files, which is incompatible with torrent seeding (as an example).
+
