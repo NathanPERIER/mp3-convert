@@ -45,7 +45,7 @@ def metadata_mp3(path: str, leaf: FilesystemLeaf) -> RawMetadata :
 
     tags = __read_mp3_for_tags(filepath).tags
     if tags is not None and 'TXXX:Convert-Keep' in tags :
-        res.keep = tags['TXXX:Convert-Keep'].text[0].strip()
+        res.keep = tags['TXXX:Convert-Keep'].text[0]
     
     return res
 
@@ -58,7 +58,7 @@ def metadata_mpeg4(path: str, leaf: FilesystemLeaf) :
         tags = MP4(f).tags
     
     if tags is not None and '----:com.apple.iTunes:Convert-Keep' in tags :
-        res.keep = tags['----:com.apple.iTunes:Convert-Keep'][0].strip()
+        res.keep = tags['----:com.apple.iTunes:Convert-Keep'][0]
     
     return res
 
@@ -71,7 +71,7 @@ def metadata_flac(path: str, leaf: FilesystemLeaf) :
         tags = FLAC(f).tags
     
     if tags is not None and 'CONVERT-KEEP' in tags :
-        res.keep = tags['CONVERT-KEEP'][0].strip()
+        res.keep = tags['CONVERT-KEEP'][0]
     
     return res
 
@@ -89,6 +89,9 @@ def read_metadata(path: str, leaf: FilesystemLeaf, default_keep: ConvertKeep) :
     
     keep = default_keep
     if raw.keep is not None :
+        if isinstance(raw.keep, bytes) :
+            raw.keep = raw.keep.decode('utf-8')
+            raw.keep = raw.keep.strip()
         parsed_keep = parse_keep(raw.keep)
         if parsed_keep is None :
             print(f"Bad Convert-Keep tag : {raw.keep}, ({os.path.join(path, leaf.filename())})")
