@@ -6,21 +6,15 @@ from mutagen.mp4 import MP4
 from mutagen.flac import FLAC
 from io import BytesIO
 
+from src.metrics import MetadataCounters
 from src.collections.file_tree import ConvertKeep, LeafMetadata, FilesystemLeaf
 
 from typing import Optional
 
 
-def parse_keep(keep_rep: str) -> Optional[ConvertKeep] :
-    try:
-        return ConvertKeep[keep_rep.upper()]
-    except ValueError:
-        return None
-
-
 class RawMetadata :
     def __init__(self) :
-        self.keep: Optional[str] = None
+        self.keep: Optional[str|bytes] = None
 
 
 def __read_mp3_for_tags(filepath: str) -> MP3 :
@@ -87,12 +81,12 @@ def read_metadata(path: str, leaf: FilesystemLeaf, default_keep: ConvertKeep) :
     else :
         print(f"Unsupported extension for metadata parsing : {leaf.extension}")
     
-    keep = default_keep
+    keep: ConvertKeep = default_keep
     if raw.keep is not None :
         if isinstance(raw.keep, bytes) :
             raw.keep = raw.keep.decode('utf-8')
             raw.keep = raw.keep.strip()
-        parsed_keep = parse_keep(raw.keep)
+        parsed_keep = ConvertKeep.parse(raw.keep)
         if parsed_keep is None :
             print(f"Bad Convert-Keep tag : {raw.keep}, ({os.path.join(path, leaf.filename())})")
         else :

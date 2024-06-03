@@ -5,7 +5,7 @@ from collections import deque
 
 from src.options import options as prog_options
 from src.conversion import conversion
-from src.metadata.parsing import parse_keep
+from src.metadata.keep import ConvertKeep
 
 
 def help() :
@@ -32,7 +32,7 @@ def main() :
         args.popleft()
         keep_repr = args.popleft().lower()
         if keep_repr != 'all' :
-            keep = parse_keep(keep_repr)
+            keep = ConvertKeep.parse(keep_repr)
             if keep == None :
                 print(f"Bad keep threshold : {keep_repr}")
                 sys.exit(1)
@@ -40,7 +40,7 @@ def main() :
     
     if len(args) > 1 and args[0] == '--default-keep' :
         args.popleft()
-        keep = parse_keep(args.popleft().lower())
+        keep = ConvertKeep.parse(args.popleft().lower())
         if keep == None :
             print(f"Bad default Convert-Keep value : {keep_repr}")
             sys.exit(1)
