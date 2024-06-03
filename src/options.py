@@ -9,6 +9,9 @@ class ProgramOptions :
         self.dry_run:    bool           = False
         self.default_keep:  ConvertKeep = ConvertKeep.ALWAYS
         self.keep_treshold: ConvertKeep = ConvertKeep.lowest()
+        # Prometheus metrics
+        self.metrics_enabled: bool = False
+        self.matrics_path:    str  = '/var/lib/node_exporter/textfile_collector'
 
 
 options = ProgramOptions()

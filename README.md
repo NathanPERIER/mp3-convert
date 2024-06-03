@@ -3,7 +3,7 @@
 This is a script I made to convert my music library to MP3. 
 
 ```
-usage: ./convert.py [--dry-run] [--no-remove] [--keep-threshold <keep>] [--default-keep <keep>] <source> <destination>
+usage: ./convert.py [--dry-run] [--no-remove] [--keep-threshold <keep>] [--default-keep <keep>] [--prometheus-metrics] [--metrics-path <dir>] <source> <destination>
 ```
 
 The idea is that we have a bunch of audio files organised in a directory, for example like this :
@@ -73,4 +73,9 @@ We can then pass the desired level via the `--keep-threshold` command-line optio
 > Warning: The code used for parsing MP3/M4A/FLAC tags was only tested with metadata written via [kid3](https://kid3.kde.org/), there might still be edge cases that are not taken into account.
 
 The main downside with this method is that it requires modifying the source files, which is incompatible with torrent seeding (as an example).
+
+
+## Prometheus metrics
+
+In order to monitor what the script does when it is executed periodically in a crontab, Prometheus metrics can be written to a file. This is intended to be used with the [textfile collector from the Prometheus Node Exporter](https://github.com/prometheus/node_exporter?tab=readme-ov-file#textfile-collector). This is disabled by default and must be enabled with `--prometheus-metrics`. By default, the file is written in `/var/lib/node_exporter/textfile_collector`. This can be changed using the `--metrics-path` command-line option.
 

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import os
 import sys
 from collections import deque
 
@@ -10,7 +11,7 @@ from src.metadata.keep import ConvertKeep
 
 
 def help() :
-    print(f"{sys.argv[0]} [--dry-run] [--no-remove] [--keep-threshold <keep>] [--default-keep <keep>] <source> <destination>")
+    print(f"{sys.argv[0]} [--dry-run] [--no-remove] [--keep-threshold <keep>] [--default-keep <keep>] [--prometheus-metrics] [--metrics-path <dir>] <source> <destination>")
 
 
 def main() :
@@ -46,6 +47,14 @@ def main() :
             print(f"Bad default Convert-Keep value : {keep_repr}")
             sys.exit(1)
         prog_options.default_keep = keep
+    
+    if len(args) > 0 and args[0] == '--prometheus-metrics' :
+        args.popleft()
+        prog_options.metrics_enabled = True
+    
+    if len(args) > 1 and args[0] == '--metrics-path' :
+        args.popleft()
+        prog_options.matrics_path = args.popleft()
 
     
     if len(args) != 2 :
@@ -63,11 +72,18 @@ def main() :
     metrics = conversion(source_dir, dest_dir)
 
     print()
-    if prog_options.dry_run :
+    if not prog_options.metrics_enabled :
+        metrics.summary()
+    elif prog_options.dry_run :
         print(' --- Metrics ---')
         metrics.print()
     else :
         metrics.summary()
+        filepath = os.path.join(prog_options.matrics_path, 'mp3conv.prom')
+        filepath_tmp = f"{filepath}.tmp"
+        with open(filepath_tmp, 'w') as f :
+            metrics.print(f)
+        os.rename(filepath_tmp, filepath)
     
     if metrics.status != ExitStatus.SUCCESS :
         sys.exit(1)
