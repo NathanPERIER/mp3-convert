@@ -3,7 +3,7 @@ from datetime import datetime
 
 from src.metadata.keep import ConvertKeep
 
-from typing import Final, Optional, Sequence
+from typing import Final, Optional, Sequence, Callable
 
 
 class LeafMetadata :
@@ -86,3 +86,9 @@ class FilesystemNode :
         if filename in node.files :
             return node.files[filename]
         return None
+    
+    def walk_leaves(self, func: "FilesystemLeaf[[str, str], None]") :
+        for leaf in self.files.values() :
+            func(leaf)
+        for child in self.subfolders.values() :
+            child.walk_leaves(func)

@@ -70,7 +70,7 @@ def metadata_flac(path: str, leaf: FilesystemLeaf) :
     return res
 
 
-def read_metadata(path: str, leaf: FilesystemLeaf, default_keep: ConvertKeep) :
+def read_metadata(path: str, leaf: FilesystemLeaf, default_keep: ConvertKeep, metrics: MetadataCounters) :
     raw = RawMetadata()
     if leaf.extension == 'mp3' :
         raw = metadata_mp3(path, leaf)
@@ -91,6 +91,7 @@ def read_metadata(path: str, leaf: FilesystemLeaf, default_keep: ConvertKeep) :
             print(f"Bad Convert-Keep tag : {raw.keep}, ({os.path.join(path, leaf.filename())})")
         else :
             keep = parsed_keep
+            metrics.incr(keep.name.lower())
     
     leaf.metadata = LeafMetadata(keep)
 

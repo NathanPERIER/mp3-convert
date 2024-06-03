@@ -9,5 +9,9 @@ class Patch(ABC) :
         pass
 
     @abstractmethod
+    def get_name(self) -> str :
+        pass
+
+    @abstractmethod
     def describe(self) -> str :
         pass

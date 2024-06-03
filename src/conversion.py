@@ -2,15 +2,18 @@
 import os
 import sys
 import itertools
+import traceback
 from datetime import datetime
 from tqdm import tqdm
 
 from typing import Optional, Tuple, Iterable
 
 from src.options import options as prog_options
+from src.metrics import ConversionMetrics, ExitStatus
 from src.metadata.keep import ConvertKeep
 from src.collections.file_tree import FilesystemNode, FilesystemLeaf
 from src.utils.directory_analyser import scan_directory
+from src.utils.print_iterator     import PrintIterator
 from src.metadata.parsing import read_metadata
 from src.patches import Patch, ConvertPatch, CopyPatch, CreateDirPatch, RemovePatch
 
@@ -55,14 +58,15 @@ def recursive_remove(node: FilesystemNode, path: str) -> Iterable[Patch] :
 # - Source exists, destination exists  => cp/ffmpeg if source strictly older than destination
 # - Destination exists, source doesn't => if can_remove, rm
 
-def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> list[Patch] :
+def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, metrics: ConversionMetrics, src_base_path: Optional[str], dst_base_path: Optional[str]) -> "list[Patch]" :
     res: list[Patch] = []
 
     if prog_options.keep_treshold != ConvertKeep.lowest() :
         for leaf in src_node.list_files() :
-            read_metadata(src_base_path, leaf, prog_options.default_keep)
+            read_metadata(src_base_path, leaf, prog_options.default_keep, metrics.convert_tags)
             if leaf.metadata is None or leaf.metadata.keep <= prog_options.keep_treshold :
                 continue
+            metrics.ignored_files += 1
             print(f"IGNORE ({leaf.metadata.keep.name.lower()}) {os.path.join(src_base_path, leaf.filename())}")
             src_node.drop_file(leaf.name)
     
@@ -106,7 +110,7 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_
 # - Source exists, destination exists  => keep going
 # - Destination exists, source doesn't => if can_remove, rm recursively (only files)
 
-def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> list[Patch] :
+def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, metrics: ConversionMetrics, src_base_path: Optional[str], dst_base_path: Optional[str]) -> "list[Patch]" :
     res: list[Patch] = []
 
     src_folder_entries = src_node.list_folders()
@@ -128,7 +132,7 @@ def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_p
         else :
             i_dst += 1
         i_src += 1
-        patches = process(src_entry, dst_entry, src_base_path, dst_base_path)
+        patches = process(src_entry, dst_entry, metrics, src_base_path, dst_base_path)
         if len(patches) > 0 :
             if mkdir_patch is not None :
                 res.append(mkdir_patch)
@@ -138,7 +142,7 @@ def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_p
     while i_src < len(src_folder_entries) :
         src_node = src_folder_entries[i_src]
         dst_node, mkdir_patch = add_directory(src_node.name, dst_node, dst_base_path)
-        patches = process(src_node, dst_node, src_base_path, dst_base_path)
+        patches = process(src_node, dst_node, metrics, src_base_path, dst_base_path)
         if len(patches) > 0 :
             if mkdir_patch is not None :
                 res.append(mkdir_patch)
@@ -155,45 +159,60 @@ def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_p
 
 
 
-def process(src_node: FilesystemNode, dst_node: FilesystemNode, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> list[Patch] :
+def process(src_node: FilesystemNode, dst_node: FilesystemNode, metrics: ConversionMetrics, src_base_path: Optional[str] = None, dst_base_path: Optional[str] = None) -> "list[Patch]" :
     src_subfolder_path = src_node.name if src_base_path is None else os.path.join(src_base_path, src_node.name)
     dst_subfolder_path = dst_node.name if dst_base_path is None else os.path.join(dst_base_path, dst_node.name)
     return list(itertools.chain(
         # Files
-        process_leaves(src_node, dst_node, src_subfolder_path, dst_subfolder_path),
+        process_leaves(src_node, dst_node, metrics, src_subfolder_path, dst_subfolder_path),
         # Subfolders
-        process_nodes(src_node, dst_node, src_subfolder_path, dst_subfolder_path)
+        process_nodes(src_node, dst_node, metrics, src_subfolder_path, dst_subfolder_path)
     ))
 
 
-
-def conversion(source_dir: str, dest_dir: str) :
+def compute_patches(source_dir: str, dest_dir: str, metrics: ConversionMetrics) -> "list[Patch]" :
     source_files = scan_directory(source_dir, INPUT_EXTENSIONS)
     print('Found', source_files.file_count, 'input files')
+    source_files.walk_leaves(lambda node: metrics.input_files.incr(node.extension))
 
     dest_files = scan_directory(dest_dir, [OUTPUT_EXTENSION])
     print('Found', dest_files.file_count, 'files in the destination directory')
+    dest_files.walk_leaves(lambda node: metrics.output_files.incr(node.extension))
 
     print('Processing trees and metadata')
-    patches = process(source_files, dest_files)
+    return process(source_files, dest_files, metrics)
 
-    if len(patches) == 0 :
-        print("Nothing to do")
-        return
 
-    if prog_options.dry_run :
-        print(' --- Patch summary --- ')
-        for p in patches :
-            print(p.describe())
-        return
-    
-    print('Applying patches')
-
-    if os.isatty(sys.stdout.fileno()) :
-        for p in tqdm(patches, desc='Progress', unit='patch') :
-            p.apply()
-        return
-    
+def dry_run(patches: "list[Patch]", metrics: ConversionMetrics) -> ConversionMetrics :
+    print('\n --- Patch summary --- ')
     for p in patches :
-        p.apply()
         print(p.describe())
+        metrics.patches.incr(p.get_name())
+    return metrics.end()
+
+
+def conversion(source_dir: str, dest_dir: str) -> ConversionMetrics :
+    metrics = ConversionMetrics()
+
+    try:
+        patches = compute_patches(source_dir, dest_dir, metrics)
+
+        if len(patches) == 0 :
+            print("Nothing to do")
+            return metrics.end()
+
+        if prog_options.dry_run :
+            return dry_run(patches, metrics)
+        
+        print('Applying patches')
+
+        patches_it = tqdm(patches, desc='Progress', unit='patch') if os.isatty(sys.stdout.fileno()) else PrintIterator(patches)
+        
+        for p in patches_it :
+            p.apply()
+            metrics.patches.incr(p.get_name())
+    except Exception :
+        metrics.status = ExitStatus.ERROR
+        traceback.print_exc(file = sys.stderr)
+    
+    return metrics.end()

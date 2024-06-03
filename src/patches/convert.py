@@ -17,6 +17,9 @@ class ConvertPatch(Patch) :
         command = ['ffmpeg', '-y', '-i', self.source_file, '-q:a', '2', self.dest_file]
         subprocess.run(command, check=True, capture_output=True)
     
+    def get_name(self) -> str :
+        return 'convert'
+    
     def describe(self) -> str :
         res = f"CONVERT {self.source_file}"
         if self.update :

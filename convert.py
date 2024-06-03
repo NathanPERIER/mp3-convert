@@ -5,6 +5,7 @@ from collections import deque
 
 from src.options import options as prog_options
 from src.conversion import conversion
+from src.metrics import ExitStatus
 from src.metadata.keep import ConvertKeep
 
 
@@ -59,7 +60,17 @@ def main() :
     if dest_dir.endswith('/') :
         dest_dir = dest_dir[:-1]
 
-    conversion(source_dir, dest_dir)
+    metrics = conversion(source_dir, dest_dir)
+
+    print()
+    if prog_options.dry_run :
+        print(' --- Metrics ---')
+        metrics.print()
+    else :
+        metrics.summary()
+    
+    if metrics.status != ExitStatus.SUCCESS :
+        sys.exit(1)
 
 
 if __name__== '__main__' :

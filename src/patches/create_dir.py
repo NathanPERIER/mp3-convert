@@ -13,6 +13,9 @@ class CreateDirPatch(Patch) :
     
     def apply(self) :
         os.mkdir(self.directory_path)
+
+    def get_name(self) -> str :
+        return 'mkdir'
     
     def describe(self) -> str :
         return f"CREATE {self.directory_path}"

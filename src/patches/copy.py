@@ -16,6 +16,9 @@ class CopyPatch(Patch) :
     def apply(self) :
         subprocess.run(['cp', self.source_file, self.dest_folder], check=True, capture_output=True)
     
+    def get_name(self) -> str :
+        return 'copy'
+    
     def describe(self) -> str :
         res = f"COPY {self.source_file}"
         if self.update :
