@@ -40,7 +40,7 @@ class ConversionMetrics :
 		self.output_files = MetadataCounters('mp3')
 		self.convert_tags = MetadataCounters('always', 'bonus', 'skip')
 		self.patches = MetadataCounters('convert', 'copy', 'mkdir', 'remove')
-		self.ignored_files = 0
+		self.ignored_files = MetadataCounters('mp3', 'flac', 'm4a')
 		self._end_time_sec = 0.0
 	
 	def end(self) -> "ConversionMetrics" :
@@ -57,7 +57,7 @@ class ConversionMetrics :
 				print(f"  - {count} {ext}")
 		print(f"Found {sum(self.output_files.counters.values())} files in destination directory")
 		print(f"Performed {self.patches.counters['convert']} conversions, {self.patches.counters['copy']} copies and {self.patches.counters['remove']} removals in {int(self.get_duration() * 1000)}ms")
-		print(f"Ignored {self.ignored_files} files")
+		print(f"Ignored {sum(self.ignored_files.counters.values())} files")
 		print('Done' if self.status == ExitStatus.SUCCESS else 'Error')
 
 	def print(self, out: TextIO = sys.stdout) :
@@ -71,7 +71,7 @@ class ConversionMetrics :
 
 		print('# TYPE mp3conv_run_time gauge',                                                               file = out)
 		print('# HELP mp3conv_run_time Total run time of the conversion.',                                   file = out)
-		print(f"mp3conv_start_time {self.get_duration()}",                                                   file = out)
+		print(f"mp3conv_run_time {self.get_duration()}",                                                   file = out)
 
 		print('# TYPE mp3conv_input_files_count gauge',                                                      file = out)
 		print('# HELP mp3conv_input_files_count Count of files in the input directory.',                     file = out)
@@ -89,8 +89,9 @@ class ConversionMetrics :
 			print(f"mp3conv_convert_tags{{convert_tag={tag}}} {count}",                                      file = out)
 
 		print('# TYPE mp3conv_ignored_files_count gauge',                                                    file = out)
-		print('# HELP mp3conv_ignored_files_count Number of files ignored.',                                 file = out)
-		print(f"mp3conv_ignored_files_count {self.ignored_files}",                                           file = out)
+		print('# HELP mp3conv_ignored_files_count Number of files ignored by the script.',                   file = out)
+		for ext, count in self.ignored_files.counters.items() :
+			print(f"mp3conv_ignored_files_count{{extension={ext}}} {count}",                                 file = out)
 
 		print('# TYPE mp3conv_patches_count gauge',                                                          file = out)
 		print('# HELP mp3conv_patches_count Count of patches applied by the script.',                        file = out)

@@ -66,7 +66,7 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, metrics: 
             read_metadata(src_base_path, leaf, prog_options.default_keep, metrics.convert_tags)
             if leaf.metadata is None or leaf.metadata.keep <= prog_options.keep_treshold :
                 continue
-            metrics.ignored_files += 1
+            metrics.ignored_files.incr(leaf.extension)
             print(f"IGNORE ({leaf.metadata.keep.name.lower()}) {os.path.join(src_base_path, leaf.filename())}")
             src_node.drop_file(leaf.name)
     
