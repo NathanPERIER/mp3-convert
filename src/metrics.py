@@ -73,30 +73,30 @@ class ConversionMetrics :
 		print('# HELP mp3conv_run_time Total run time of the conversion.',                                   file = out)
 		print(f"mp3conv_run_time {self.get_duration()}",                                                     file = out)
 
-		print('# TYPE mp3conv_input_files_count gauge',                                                      file = out)
-		print('# HELP mp3conv_input_files_count Count of files in the input directory.',                     file = out)
+		print('# TYPE mp3conv_input_files gauge',                                                            file = out)
+		print('# HELP mp3conv_input_files Count of files in the input directory.',                           file = out)
 		for ext, count in self.input_files.counters.items() :
-			print(f"mp3conv_input_files_count{{extension=\"{ext}\"}} {count}",                               file = out)
+			print(f"mp3conv_input_files{{extension=\"{ext}\"}} {count}",                                     file = out)
 
-		print('# TYPE mp3conv_output_files_count gauge',                                                     file = out)
-		print('# HELP mp3conv_output_files_count Count of files in the output directory before conversion.', file = out)
+		print('# TYPE mp3conv_output_files gauge',                                                           file = out)
+		print('# HELP mp3conv_output_files Count of files in the output directory before conversion.',       file = out)
 		for ext, count in self.output_files.counters.items() :
-			print(f"mp3conv_output_files_count{{extension=\"{ext}\"}} {count}",                              file = out)
+			print(f"mp3conv_output_files{{extension=\"{ext}\"}} {count}",                                    file = out)
 
 		print('# TYPE mp3conv_convert_tags gauge',                                                           file = out)
 		print('# HELP mp3conv_convert_tags Count of conversion tags found in input files.',                  file = out)
 		for tag, count in self.convert_tags.counters.items() :
 			print(f"mp3conv_convert_tags{{convert_tag=\"{tag}\"}} {count}",                                  file = out)
 
-		print('# TYPE mp3conv_ignored_files_count gauge',                                                    file = out)
-		print('# HELP mp3conv_ignored_files_count Number of files ignored by the script.',                   file = out)
+		print('# TYPE mp3conv_ignored_files gauge',                                                          file = out)
+		print('# HELP mp3conv_ignored_files Number of files ignored by the script.',                         file = out)
 		for ext, count in self.ignored_files.counters.items() :
-			print(f"mp3conv_ignored_files_count{{extension=\"{ext}\"}} {count}",                             file = out)
+			print(f"mp3conv_ignored_files{{extension=\"{ext}\"}} {count}",                                   file = out)
 
-		print('# TYPE mp3conv_patches_count gauge',                                                          file = out)
-		print('# HELP mp3conv_patches_count Count of patches applied by the script.',                        file = out)
+		print('# TYPE mp3conv_patches gauge',                                                                file = out)
+		print('# HELP mp3conv_patches Count of patches applied by the script.',                              file = out)
 		for patch_type, count in self.patches.counters.items() :
-			print(f"mp3conv_patches_count{{pach_type=\"{patch_type}\"}} {count}",                            file = out)
+			print(f"mp3conv_patches{{pach_type=\"{patch_type}\"}} {count}",                                  file = out)
 
 		
 		
