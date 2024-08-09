@@ -7,13 +7,15 @@ from typing import Optional
 class ConvertKeep(Enum) :
     ALWAYS = 1
     BONUS = 2
-    SKIP = 3
+    ARCHIVE = 3
+    SKIP = 4
 
     def parse(repr: str) -> "Optional[ConvertKeep]" :
         names_mapping = {
             'always': ConvertKeep.ALWAYS,
             'keep': ConvertKeep.ALWAYS,
             'bonus': ConvertKeep.BONUS,
+            'archive': ConvertKeep.ARCHIVE,
             'never': ConvertKeep.SKIP,
             'skip': ConvertKeep.SKIP,
         }

@@ -66,6 +66,7 @@ The idea is that we are going to add a custom `Convert-Keep` tag to the audio fi
 
 - `always`/`keep`: kept all the time
 - `bonus`: good to have
+- `archive`: no real interest besides archiving
 - `never`/`skip`: do not keep
 
 We can then pass the desired level via the `--keep-threshold` command-line option. Any file whose level is strictly under the desired level will be considered as inexisting by the script. This is to say that it will not be converted/copied and it will be removed from the destination directory (if it is allowed). For files that do not have the tag, the default value is `always` but it can be changed via the `--default-keep` command-line option.
