@@ -38,7 +38,7 @@ class ConversionMetrics :
 		self.start_time_sec: Final[float] = time.time()
 		self.input_files = MetadataCounters('mp3', 'flac', 'm4a')
 		self.output_files = MetadataCounters('mp3')
-		self.convert_tags = MetadataCounters('always', 'bonus', 'skip')
+		self.convert_tags = MetadataCounters('always', 'bonus', 'archive', 'skip')
 		self.patches = MetadataCounters('convert', 'copy', 'mkdir', 'remove')
 		self.ignored_files = MetadataCounters('mp3', 'flac', 'm4a')
 		self._end_time_sec = 0.0
