@@ -17,5 +17,8 @@ class ClearDirPatch(Patch) :
         except Exception :
             pass
 
+    def get_name(self) -> str :
+        return 'rmdir'
+
     def describe(self) -> str :
         return f"CLEAR {self.dir_path}"
