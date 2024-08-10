@@ -48,6 +48,12 @@ class FilesystemNode :
         del self.files[name]
         self.file_count -= 1
         return True
+    
+    def drop_folder(self, name: str) -> bool :
+        if name not in self.subfolders :
+            return False
+        del self.subfolders[name]
+        return True
 
     def _add_subfolder(self, name: str) -> "FilesystemNode" :
         self.file_count += 1

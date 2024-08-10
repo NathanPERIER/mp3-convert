@@ -15,15 +15,17 @@ from src.collections.file_tree import FilesystemNode, FilesystemLeaf
 from src.utils.directory_analyser import scan_directory
 from src.utils.print_iterator     import PrintIterator
 from src.metadata.parsing import read_metadata
-from src.patches import Patch, ConvertPatch, CopyPatch, CreateDirPatch, RemovePatch
+from src.patches import Patch, ClearDirPatch, ConvertPatch, CopyPatch, CreateDirPatch, RemovePatch
 
 
 INPUT_EXTENSIONS = ['flac', 'm4a', 'mp3']
 OUTPUT_EXTENSION = 'mp3'
 
 
-def remove_file(leaf: FilesystemLeaf, path: str) -> Patch :
-    return RemovePatch(os.path.join(path, leaf.filename()))
+def remove_file(leaf: FilesystemLeaf, parent: FilesystemNode, path: str) -> Patch :
+    res = RemovePatch(os.path.join(path, leaf.filename()))
+    parent.drop_file(leaf.name)
+    return res
 
 def convert_file(leaf: FilesystemLeaf, source_folder: str, dest_folder: str, dest_dt: Optional[datetime] = None) -> Iterable[Patch] :
     source_file = os.path.join(source_folder, leaf.filename())
@@ -44,12 +46,15 @@ def add_directory(name: str, node: FilesystemNode, path: str) -> Tuple[Filesyste
     return (res_node, res_patch)
     
 
-def recursive_remove(node: FilesystemNode, path: str) -> Iterable[Patch] :
+def recursive_remove(node: FilesystemNode, parent: FilesystemNode, path: str) -> Iterable[Patch] :
     subfolder_path = os.path.join(path, node.name)
-    return itertools.chain(
-        (remove_file(file, subfolder_path) for file in node.files.values()),
-        itertools.chain.from_iterable(recursive_remove(node, subfolder_path) for node in node.subfolders.values()),
+    res = itertools.chain(
+        (remove_file(file, node, subfolder_path) for file in list(node.files.values())),
+        itertools.chain.from_iterable(recursive_remove(node, parent, subfolder_path) for node in list(node.subfolders.values())),
+        [ ClearDirPatch(os.path.join(path, node.name)) ]
     )
+    parent.drop_folder(node.name)
+    return res
 
 
 
@@ -87,7 +92,7 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, metrics: 
             i_src += 1
         else :                                         # output file doesn't exist in the source tree
             if prog_options.can_remove :
-                res.append(remove_file(dst_entry, dst_base_path))
+                res.append(remove_file(dst_entry, dst_node, dst_base_path))
             i_dst += 1
     
     # remaining files that exist only in the source tree
@@ -98,7 +103,7 @@ def process_leaves(src_node: FilesystemNode, dst_node: FilesystemNode, metrics: 
     # remaining files that exist only in the destination tree
     if prog_options.can_remove :
         while i_dst < len(dst_file_entries) :
-            res.append(remove_file(dst_file_entries[i_dst], dst_base_path))
+            res.append(remove_file(dst_file_entries[i_dst], dst_node, dst_base_path))
             i_dst += 1
     
     return res
@@ -124,7 +129,7 @@ def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, metrics: C
         mkdir_patch = None
         if src_entry.name > dst_entry.name : # output folder doesn't exist in the source tree
             if prog_options.can_remove :
-                res.extend(recursive_remove(dst_entry, dst_base_path))
+                res.extend(recursive_remove(dst_entry, dst_node, dst_base_path))
             i_dst += 1
             continue
         if src_entry.name < dst_entry.name : # input folder doesn't exist in the destination tree
@@ -152,7 +157,7 @@ def process_nodes(src_node: FilesystemNode, dst_node: FilesystemNode, metrics: C
     # remaining folders that exist only in the destination tree
     if prog_options.can_remove :
         while i_dst < len(dst_folder_entries) :
-            res.extend(recursive_remove(dst_folder_entries[i_dst], dst_base_path))
+            res.extend(recursive_remove(dst_folder_entries[i_dst], dst_node, dst_base_path))
             i_dst += 1
     
     return res
