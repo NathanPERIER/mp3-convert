@@ -211,7 +211,7 @@ def conversion(source_dir: str, dest_dir: str) -> ConversionMetrics :
         
         print('Applying patches')
 
-        patches_it = tqdm(patches, desc='Progress', unit='patch') if os.isatty(sys.stdout.fileno()) else PrintIterator(patches)
+        patches_it = tqdm(patches, desc='Progress', unit='patch') if os.isatty(sys.stdout.fileno()) else PrintIterator(patches, lambda x: print(x.describe()))
         
         for p in patches_it :
             p.apply()
